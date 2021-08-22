@@ -17,6 +17,10 @@
 #include "time.h"
 #include "sys/time.h"
 
+#include "wifi_init.h"
+#include "usr_sntp.h"
+#include "https_request_weather.h"
+
 #define TAG "HELLO_WORLD_TEST"
 
 void time_test(void)
@@ -53,7 +57,7 @@ void time_test(void)
 	strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
 	// 7. 日期数据从串口输出
 	ESP_LOGI(TAG, "The current date/time in Shanghai is: %s", strftime_buf);
-
+#if 0
 	// 8. 修改时间
 	timeinfo.tm_hour += 1;
 	// 9. 时间格式转换
@@ -67,11 +71,20 @@ void time_test(void)
 	localtime_r(&now, &timeinfo);
     strftime(strftime_buf, sizeof(strftime_buf), "Date:%Y-%m-%d Time:%I:%M:%S", &timeinfo);
     ESP_LOGI(TAG, "The current date/time in Shanghai is: \n%s\n", strftime_buf);
-
+#endif
 }
 
 void app_main(void)
 {
+	wifi_init();
+
+	if (0 == wifi_is_connect())
+	{
+		usr_sntp_init();
+		https_request_weather();
+	}
+
+#if 0
 	ESP_LOGI(TAG, "ESP_LOGI I am xxx \n");
     printf("Hello world! I am xxx \n");
 
@@ -90,6 +103,7 @@ void app_main(void)
             (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 
     printf("Minimum free heap size: %d bytes\n", esp_get_minimum_free_heap_size());
+#endif
 
     for (int i = 10; i >= 0; i--) {
         printf("Restarting in %d seconds...\n", i);
