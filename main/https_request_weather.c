@@ -31,7 +31,6 @@
 #include "esp_log.h"
 #include "esp_system.h"
 #include "nvs_flash.h"
-#include "protocol_examples_common.h"
 #include "esp_netif.h"
 
 #include "lwip/err.h"
@@ -45,23 +44,20 @@
 
 #define WEB_SERVER          "api.seniverse.com"
 #define WEB_PORT            "80"
-#define WEB_URL             "https://api.seniverse.com/v3/weather/now.json?key="
+#define WEB_URL             "https://api.seniverse.com/v3/weather/now.json"
 
-static const char *TAG = "example";
+static const char *TAG = "https_request";
 
-#define APIKEY		        "smtq3n0ixdggurox"
-#define city		        "zhengzhou"
+#define APIKEY		        "S-7cD41DQtD2xRQFm"
+#define CITY		        "zhengzhou"
 #define language	        "en"
 
-//httpÇëÇó°ü
-//static const char *REQUEST = "GET https://api.seniverse.com/v3/weather/now.json?key=smtq3n0ixdggurox&location=beijing&language=en&unit=c\r\n\r\n";
+//static const char *REQUEST = "GET "WEB_URL"?key="APIKEY""city"&language="language" HTTP/1.1\r\n"
+//								"Host: "WEB_SERVER"\r\n"
+//								"Connection: close\r\n"
+//								"\r\n";
 
-static const char *REQUEST = "GET "WEB_URL""APIKEY"&location="city"&language="language" HTTP/1.1\r\n"
-    "Host: "WEB_SERVER"\r\n"
-    "Connection: close\r\n"
-    "\r\n";
-
-static void https_get_request(esp_tls_cfg_t cfg)
+static void https_get_request(esp_tls_cfg_t cfg, char * _city)
 {
     char buf[512];
     int ret, len;
@@ -75,12 +71,17 @@ static void https_get_request(esp_tls_cfg_t cfg)
         goto exit;
     }
 
+//    memset(buf,sizeof(buf),0);
+    bzero(buf, sizeof(buf));
+    sprintf(buf, "GET %s?key=%s&location=%s&language=%s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
+    		WEB_URL, APIKEY, _city, language, WEB_SERVER);
+
     size_t written_bytes = 0;
-    ESP_LOGI(TAG, "NEED %d bytes written", strlen(REQUEST));
+    ESP_LOGI(TAG, "NEED %d bytes written:\r\n%s", strlen(buf), buf);
     do {
         ret = esp_tls_conn_write(tls,
-                                 REQUEST + written_bytes,
-								 strlen(REQUEST) - written_bytes);
+        						 buf + written_bytes,
+								 strlen(buf) - written_bytes);
         if (ret >= 0) {
             ESP_LOGI(TAG, "%d bytes written", ret);
             written_bytes += ret;
@@ -88,7 +89,7 @@ static void https_get_request(esp_tls_cfg_t cfg)
             ESP_LOGE(TAG, "esp_tls_conn_write  returned: [0x%02X](%s)", ret, esp_err_to_name(ret));
             goto exit;
         }
-    } while (written_bytes < sizeof(REQUEST));
+    } while (written_bytes < strlen(buf));
 
     ESP_LOGI(TAG, "Reading HTTP response...");
 
@@ -122,10 +123,10 @@ static void https_get_request(esp_tls_cfg_t cfg)
 
 exit:
     esp_tls_conn_delete(tls);
-    for (int countdown = 10; countdown >= 0; countdown--) {
-        ESP_LOGI(TAG, "%d...", countdown);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
+//    for (int countdown = 10; countdown >= 0; countdown--) {
+//        ESP_LOGI(TAG, "%d...", countdown);
+//        vTaskDelay(1000 / portTICK_PERIOD_MS);
+//    }
 }
 
 static void https_request_task(void *pvparameters)
@@ -135,7 +136,8 @@ static void https_request_task(void *pvparameters)
     esp_tls_cfg_t cfg = {
         .crt_bundle_attach = esp_crt_bundle_attach,
     };
-    https_get_request(cfg);
+
+    https_get_request(cfg, CITY);
 
     ESP_LOGI(TAG, "Finish https_request example");
     vTaskDelete(NULL);

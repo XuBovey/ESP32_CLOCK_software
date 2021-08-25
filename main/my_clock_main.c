@@ -20,8 +20,10 @@
 #include "wifi_init.h"
 #include "usr_sntp.h"
 #include "https_request_weather.h"
+#include "smart_config.h"
+#include "usr_led_strip.h"
 
-#define TAG "HELLO_WORLD_TEST"
+#define TAG "main"
 
 void time_test(void)
 {
@@ -74,43 +76,46 @@ void time_test(void)
 #endif
 }
 
+void usr_task1( void * pvParameters )
+{
+	for( ;; ){
+		time_test();
+		vTaskDelay(1000 / portTICK_PERIOD_MS);
+	}
+}
+
+void usr_sntp_task( void * pvParameters )
+{
+	for( ;; ){
+		if (0 == wifi_is_connect())
+		{
+			usr_sntp_init();
+		}
+		vTaskDelay(30000 / portTICK_PERIOD_MS);
+	}
+}
+
+void usr_request_weather_task( void * pvParameters )
+{
+	for( ;; ){
+		if (0 == wifi_is_connect())
+		{
+			https_request_weather();
+		}
+		vTaskDelay(60000 / portTICK_PERIOD_MS);
+	}
+}
+
 void app_main(void)
 {
+	// 固定路由参数
 	wifi_init();
 
-	if (0 == wifi_is_connect())
-	{
-		usr_sntp_init();
-		https_request_weather();
-	}
+	// 支持网络参数可配置后启用
+//	smart_config();
 
-#if 0
-	ESP_LOGI(TAG, "ESP_LOGI I am xxx \n");
-    printf("Hello world! I am xxx \n");
-
-    /* Print chip information */
-    esp_chip_info_t chip_info;
-    esp_chip_info(&chip_info);
-    printf("This is %s chip with %d CPU core(s), WiFi%s%s, ",
-            CONFIG_IDF_TARGET,
-            chip_info.cores,
-            (chip_info.features & CHIP_FEATURE_BT) ? "/BT" : "",
-            (chip_info.features & CHIP_FEATURE_BLE) ? "/BLE" : "");
-
-    printf("silicon revision %d, ", chip_info.revision);
-
-    printf("%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
-            (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
-
-    printf("Minimum free heap size: %d bytes\n", esp_get_minimum_free_heap_size());
-#endif
-
-    for (int i = 10; i >= 0; i--) {
-        printf("Restarting in %d seconds...\n", i);
-        time_test();
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
-    printf("Restarting now.\n");
-    fflush(stdout);
-    esp_restart();
+	xTaskCreate(usr_sntp_task, "usr_sntp_task", 4096, NULL, 5, NULL);
+	xTaskCreate(usr_request_weather_task, "usr_request_weather_task", 4096, NULL, 5, NULL);
+	xTaskCreate(usr_task1, "usr_task1", 4096, NULL, 5, NULL);
+	xTaskCreate(led_strip_task, "led_strip_task", 4096, NULL, 5, NULL);
 }
