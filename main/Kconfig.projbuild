@@ -32,13 +32,13 @@ menu "Example Configuration"
             bool "custom implementation"
     endchoice
     
-    config EXAMPLE_RMT_TX_GPIO
+    config RMT_TX_GPIO
     int "RMT TX GPIO"
     default 19
     help
         Set the GPIO number used for transmitting the RMT signal.
 
-    config EXAMPLE_STRIP_LED_NUMBER
+    config STRIP_LED_NUMBER
         int "Number of LEDS in a strip"
         default 60
         help

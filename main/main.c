@@ -22,10 +22,14 @@
 #include "https_request_weather.h"
 #include "smart_config.h"
 #include "usr_led_strip.h"
+#include "usr_aip1638.h"
+
+#include "usr_lvgl.h"
+#include "wifi_clock_ui.h"
 
 #define TAG "main"
 
-void time_test(void)
+void time_update(void)
 {
 	// 1. 定义变量-当前时间，实际上是一个长整形变量
 	// #define	_TIME_T_ long
@@ -56,30 +60,16 @@ void time_test(void)
 	// 5. 根据秒计数得到当前的时间（年月日-时分秒）
 	localtime_r(&now, &timeinfo);
 	// 6. 将年月日转换为字符串
-	strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
-	// 7. 日期数据从串口输出
-	ESP_LOGI(TAG, "The current date/time in Shanghai is: %s", strftime_buf);
-#if 0
-	// 8. 修改时间
-	timeinfo.tm_hour += 1;
-	// 9. 时间格式转换
-	now = mktime(&timeinfo);
-	// 10. 设置时间
-	struct timeval tv_now = {now,0};
-	settimeofday(&tv_now, NULL);
+	strftime(strftime_buf, sizeof(strftime_buf), "%Y-%m-%d\n%I:%M:%S", &timeinfo);
 
-	// 11. 再次获取并打印时间
-	time(&now);
-	localtime_r(&now, &timeinfo);
-    strftime(strftime_buf, sizeof(strftime_buf), "Date:%Y-%m-%d Time:%I:%M:%S", &timeinfo);
-    ESP_LOGI(TAG, "The current date/time in Shanghai is: \n%s\n", strftime_buf);
-#endif
+	SetLabelProperty(time_lable, 0, strftime_buf);
+
 }
 
 void usr_task1( void * pvParameters )
 {
 	for( ;; ){
-		time_test();
+		time_update();
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
 	}
 }
@@ -108,6 +98,9 @@ void usr_request_weather_task( void * pvParameters )
 
 void app_main(void)
 {
+	aip1638_demo();
+	usr_lvgl();
+
 	// 固定路由参数
 	wifi_init();
 
@@ -116,6 +109,11 @@ void app_main(void)
 
 	xTaskCreate(usr_sntp_task, "usr_sntp_task", 4096, NULL, 5, NULL);
 	xTaskCreate(usr_request_weather_task, "usr_request_weather_task", 4096, NULL, 5, NULL);
-	xTaskCreate(usr_task1, "usr_task1", 4096, NULL, 5, NULL);
+
 	xTaskCreate(led_strip_task, "led_strip_task", 4096, NULL, 5, NULL);
+
+	BuildPages();
+	ChangeScreen(screen_main, LV_SCR_LOAD_ANIM_NONE, 0, 0);
+	xTaskCreate(usr_task1, "usr_task1", 4096, NULL, 5, NULL);
+
 }

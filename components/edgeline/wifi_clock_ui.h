@@ -26,6 +26,7 @@ LV_IMG_DECLARE(img_aisha_png);   // assets\Aisha.png
 
 void BuildPages(void);
 void ChangeScreen(lv_obj_t * target, int fademode, int spd, int delay);
+void SetLabelProperty(lv_obj_t * target, int id, char * val);
 
 /***************************************
 

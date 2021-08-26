@@ -1,13 +1,9 @@
 #include "wifi_clock_ui.h"
 
 ///////////////////// VARIABLES ////////////////////
-lv_obj_t * start;
-lv_obj_t * aisha;
 lv_obj_t * screen_main;
-lv_obj_t * tme_panel;
+lv_obj_t * aisha;
 lv_obj_t * time_lable;
-lv_obj_t * weather;
-lv_obj_t * sensor;
 
 ///////////////////// IMAGES ////////////////////
 LV_IMG_DECLARE(img_aisha_png);   // assets\Aisha.png
@@ -135,44 +131,22 @@ void Animation1_Animation(lv_obj_t * TargetObject, int delay)
 }
 
 ///////////////////// FUNCTIONS2 ////////////////////
-static void tme_panel_eventhandler(lv_obj_t * obj, lv_event_t event)
-{
-}
-static void weather_eventhandler(lv_obj_t * obj, lv_event_t event)
-{
-}
-static void sensor_eventhandler(lv_obj_t * obj, lv_event_t event)
-{
-}
 
 ///////////////////// SCREENS ////////////////////
 void BuildPages(void)
 {
-    start = lv_obj_create(NULL, NULL);
+    screen_main = lv_obj_create(NULL, NULL);
 
-    aisha = lv_img_create(start, NULL);
+    aisha = lv_img_create(screen_main, NULL);
     lv_img_set_src(aisha, &img_aisha_png);
     lv_obj_set_click(aisha, false);
     lv_obj_set_hidden(aisha, false);
     lv_obj_set_size(aisha, 240, 240);
-    lv_obj_align(aisha, start, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_align(aisha, screen_main, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_drag(aisha, false);
+    lv_obj_set_style_local_image_opa(aisha, LV_BTN_PART_MAIN, LV_STATE_DEFAULT, 128);
 
     lv_obj_clear_state(aisha, LV_STATE_DISABLED);
-
-    screen_main = lv_obj_create(NULL, NULL);
-
-    tme_panel = lv_obj_create(screen_main, NULL);
-    lv_obj_set_click(tme_panel, true);
-    lv_obj_set_hidden(tme_panel, false);
-    lv_obj_clear_state(tme_panel, LV_STATE_DISABLED);
-    lv_obj_set_size(tme_panel, 210, 120);  // force: 0
-    lv_obj_align(tme_panel, screen_main, LV_ALIGN_CENTER, 0, -50); // force: 210
-    lv_obj_set_drag(tme_panel, false);
-    lv_obj_set_event_cb(tme_panel, tme_panel_eventhandler);
-    lv_obj_set_style_local_bg_color(tme_panel, LV_BTN_PART_MAIN, LV_STATE_DEFAULT,
-                                    lv_color_hex(93 * 256 * 256 + 64 * 256 + 231));
-    lv_obj_set_style_local_bg_opa(tme_panel, LV_BTN_PART_MAIN, LV_STATE_DEFAULT, 255);
 
     time_lable = lv_label_create(screen_main, NULL);
     lv_label_set_long_mode(time_lable, LV_LABEL_LONG_EXPAND);
@@ -184,35 +158,11 @@ void BuildPages(void)
     lv_obj_clear_state(time_lable, LV_STATE_DISABLED);
     lv_obj_set_drag(time_lable, false);
     lv_obj_set_style_local_text_color(time_lable, LV_BTN_PART_MAIN, LV_STATE_DEFAULT,
-                                      lv_color_hex(245 * 256 * 256 + 245 * 256 + 248));
+                                      lv_color_hex(252 * 256 * 256 + 250 * 256 + 250));
     lv_obj_set_style_local_text_opa(time_lable, LV_BTN_PART_MAIN, LV_STATE_DEFAULT, 255);
     lv_obj_set_style_local_text_font(time_lable, LV_BTN_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_28);
 
-    lv_obj_align(time_lable, screen_main, LV_ALIGN_CENTER, 0, -50); // force: 132
-
-    weather = lv_obj_create(screen_main, NULL);
-    lv_obj_set_click(weather, true);
-    lv_obj_set_hidden(weather, false);
-    lv_obj_clear_state(weather, LV_STATE_DISABLED);
-    lv_obj_set_size(weather, 100, 77);  // force: -55
-    lv_obj_align(weather, screen_main, LV_ALIGN_CENTER, -55, 60); // force: 100
-    lv_obj_set_drag(weather, false);
-    lv_obj_set_event_cb(weather, weather_eventhandler);
-    lv_obj_set_style_local_bg_color(weather, LV_BTN_PART_MAIN, LV_STATE_DEFAULT,
-                                    lv_color_hex(141 * 256 * 256 + 119 * 256 + 247));
-    lv_obj_set_style_local_bg_opa(weather, LV_BTN_PART_MAIN, LV_STATE_DEFAULT, 255);
-
-    sensor = lv_obj_create(screen_main, NULL);
-    lv_obj_set_click(sensor, true);
-    lv_obj_set_hidden(sensor, false);
-    lv_obj_clear_state(sensor, LV_STATE_DISABLED);
-    lv_obj_set_size(sensor, 100, 77);  // force: 55
-    lv_obj_align(sensor, screen_main, LV_ALIGN_CENTER, 55, 60); // force: 100
-    lv_obj_set_drag(sensor, false);
-    lv_obj_set_event_cb(sensor, sensor_eventhandler);
-    lv_obj_set_style_local_bg_color(sensor, LV_BTN_PART_MAIN, LV_STATE_DEFAULT,
-                                    lv_color_hex(141 * 256 * 256 + 119 * 256 + 247));
-    lv_obj_set_style_local_bg_opa(sensor, LV_BTN_PART_MAIN, LV_STATE_DEFAULT, 255);
+    lv_obj_align(time_lable, screen_main, LV_ALIGN_CENTER, 0, 0); // force: 132
 
 }
 

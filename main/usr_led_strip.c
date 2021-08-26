@@ -12,6 +12,9 @@
 #include "esp_log.h"
 #include "driver/rmt.h"
 
+#include "time.h"
+#include "sys/time.h"
+
 #include "usr_led_strip.h"
 #include "led_strip.h"
 
@@ -73,15 +76,66 @@ void led_strip_hsv2rgb(uint32_t h, uint32_t s, uint32_t v, uint32_t *r, uint32_t
     }
 }
 
-void led_strip_task( void * pvParameters )
+void led_strip_update_clock(led_strip_t *strip)
 {
     uint32_t red = 0;
     uint32_t green = 0;
     uint32_t blue = 0;
     uint16_t hue = 0;
-    uint16_t start_rgb = 0;
 
-    rmt_config_t config = RMT_DEFAULT_CONFIG_TX(CONFIG_EXAMPLE_RMT_TX_GPIO, RMT_TX_CHANNEL);
+    uint16_t sec_num, min_num, hour_num = 0;
+
+    // 1. 定义变量-当前时间，实际上是一个长整形变量
+	// #define	_TIME_T_ long
+	// typedef	_TIME_T_ time_t;
+	time_t now;
+
+	// 3. 定义年月日，时分秒格式时间变量
+	struct tm timeinfo;
+
+	// 4. 获取当前时间，得到从1970-1-1到限制的秒计数
+	time(&now);
+
+	// Set timezone to China Standard Time
+	setenv("TZ", "CST-8", 1);
+	tzset();
+
+	// 5. 根据秒计数得到当前的时间（年月日-时分秒）
+	localtime_r(&now, &timeinfo);
+
+	sec_num 	= timeinfo.tm_sec;
+	min_num 	= timeinfo.tm_min;
+	hour_num 	= (uint16_t)(timeinfo.tm_hour%12 + timeinfo.tm_min/12)*5;
+
+	for (int j = 0; j < CONFIG_STRIP_LED_NUMBER; j ++) {
+		// Build RGB values
+		hue = j * 360 / CONFIG_STRIP_LED_NUMBER;
+		led_strip_hsv2rgb(hue, 100, 0, &red, &green, &blue);
+
+		if((j+1)%5 == 0) {
+			led_strip_hsv2rgb(60, 50, 1, &red, &green, &blue);
+		}
+
+		if((j+1)%60 == sec_num) {
+			led_strip_hsv2rgb(0, 100, 5, &red, &green, &blue);
+		}
+		if((j+1)%60 == min_num) {
+			led_strip_hsv2rgb(120, 100, 5, &red, &green, &blue);
+		}
+		if((j+1)%60 == hour_num) {
+			led_strip_hsv2rgb(240, 100, 5, &red, &green, &blue);
+		}
+		// Write RGB values to strip driver
+		ESP_ERROR_CHECK(strip->set_pixel(strip, j, red, green, blue));
+	}
+	// Flush RGB values to LEDs
+	ESP_ERROR_CHECK(strip->refresh(strip, 100));
+
+}
+
+void led_strip_task( void * pvParameters )
+{
+    rmt_config_t config = RMT_DEFAULT_CONFIG_TX(CONFIG_RMT_TX_GPIO, RMT_TX_CHANNEL);
     // set counter clock to 40MHz
     config.clk_div = 2;
 
@@ -89,7 +143,7 @@ void led_strip_task( void * pvParameters )
     ESP_ERROR_CHECK(rmt_driver_install(config.channel, 0, 0));
 
     // install ws2812 driver
-    led_strip_config_t strip_config = LED_STRIP_DEFAULT_CONFIG(CONFIG_EXAMPLE_STRIP_LED_NUMBER, (led_strip_dev_t)config.channel);
+    led_strip_config_t strip_config = LED_STRIP_DEFAULT_CONFIG(CONFIG_STRIP_LED_NUMBER, (led_strip_dev_t)config.channel);
     led_strip_t *strip = led_strip_new_rmt_ws2812(&strip_config);
     if (!strip) {
         ESP_LOGE(TAG, "install WS2812 driver failed");
@@ -100,17 +154,8 @@ void led_strip_task( void * pvParameters )
     // Show simple rainbow chasing pattern
 	ESP_LOGI(TAG, "LED Rainbow Chase Start");
 	while (true) {
-		for (int j = 0; j < CONFIG_EXAMPLE_STRIP_LED_NUMBER; j ++) {
-			// Build RGB values
-			hue = j * 360 / CONFIG_EXAMPLE_STRIP_LED_NUMBER + start_rgb;
-			led_strip_hsv2rgb(hue, 90, 5, &red, &green, &blue);
-			// Write RGB values to strip driver
-			ESP_ERROR_CHECK(strip->set_pixel(strip, j, red, green, blue));
-		}
-		// Flush RGB values to LEDs
-		ESP_ERROR_CHECK(strip->refresh(strip, 100));
+		led_strip_update_clock(strip);
 
 		vTaskDelay(pdMS_TO_TICKS(EXAMPLE_CHASE_SPEED_MS));
-		start_rgb += 60;
 	}
 }

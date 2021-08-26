@@ -3,6 +3,6 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := my-clock
+PROJECT_NAME := wifi_clock
 
 include $(IDF_PATH)/make/project.mk
