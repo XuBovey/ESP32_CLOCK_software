@@ -105,7 +105,7 @@ void led_strip_update_clock(led_strip_t *strip)
 
 	sec_num 	= timeinfo.tm_sec;
 	min_num 	= timeinfo.tm_min;
-	hour_num 	= (uint16_t)(timeinfo.tm_hour%12 + timeinfo.tm_min/12)*5;
+	hour_num 	= (uint16_t)((timeinfo.tm_hour%12)*5 + timeinfo.tm_min/12);
 
 	for (int j = 0; j < CONFIG_STRIP_LED_NUMBER; j ++) {
 		// Build RGB values

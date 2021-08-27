@@ -14,13 +14,62 @@
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
 
-#define AIP1638_HOST    HSPI_HOST
+#define AIP1638_HOST    VSPI_HOST
 #define DMA_CHAN        2
 
 // pin脚定义
 #define PIN_NUM_MOSI    25
 #define PIN_NUM_CLK     26
 #define PIN_NUM_CS      27
+
+spi_device_handle_t spi;
+
+void spi_aip1638_init(void)
+{
+    esp_err_t ret;
+//    spi_device_handle_t spi;
+    // 总线配置
+    spi_bus_config_t buscfg={
+        .miso_io_num=-1, //不需要输入，并且需要输入时用的也是3线SPI，即收发用的时同一个IO口
+        .mosi_io_num=PIN_NUM_MOSI,
+        .sclk_io_num=PIN_NUM_CLK,
+        .quadwp_io_num=-1,
+        .quadhd_io_num=-1,
+        .max_transfer_sz=32 //最大数据发送32字节
+    };
+    // 设备配置
+    spi_device_interface_config_t devcfg={
+        .clock_speed_hz=400*1000,               //Clock out at 800 KHz
+        .mode=3,                                //SPI mode 0
+        .spics_io_num=PIN_NUM_CS,               //CS pin
+        .flags=SPI_DEVICE_BIT_LSBFIRST,         //LSB, default MSB
+        .queue_size=7,                          //We want to be able to queue 7 transactions at a time
+    };
+    // 总线初始化
+    //Initialize the SPI bus
+    ret=spi_bus_initialize(AIP1638_HOST, &buscfg, DMA_CHAN);
+    ESP_ERROR_CHECK(ret);
+    // 添加设备
+    //Attach the LCD to the SPI bus
+    ret=spi_bus_add_device(AIP1638_HOST, &devcfg, &spi);
+    ESP_ERROR_CHECK(ret);
+
+//    aip1638_update(spi);
+//
+//    spi_bus_remove_device(spi);
+//    spi_bus_free(AIP1638_HOST);
+}
+
+void spi_aip1638_write(spi_device_handle_t spi, const uint8_t *data, int len)
+{
+    esp_err_t ret;
+    spi_transaction_t t;
+    memset(&t, 0, sizeof(t));           //Zero out the transaction
+    t.length=8*len;                     //Command is 8 bits
+    t.tx_buffer=data;                   //The data is the cmd itself
+    ret=spi_device_polling_transmit(spi, &t);  //Transmit!
+    assert(ret==ESP_OK);                //Should have had no issues.
+}
 
 
 /*******************
@@ -51,7 +100,7 @@ bit 7   6   5   4   3   2   1   0
 uint8_t seg_font_table[]={0x3F, 0x03, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x6f, 0x40, 0x80, 0x7b, 0x39, 0x79, 0x71, 0x76, 0x38, 0x3E};
 uint8_t data_buf[16] = {0xc0, 0x00};
 
-void aip1638_buf_write(uint8_t offset, uint8_t seg_font)
+void aip1638_usr_buf_write(uint8_t offset, uint8_t seg_font)
 {
 	uint8_t index = 0;
     uint8_t seg_index = 0;
@@ -75,18 +124,7 @@ void aip1638_buf_write(uint8_t offset, uint8_t seg_font)
 	}
 }
 
-void spi_aip1638_write(spi_device_handle_t spi, const uint8_t *data, int len)
-{
-    esp_err_t ret;
-    spi_transaction_t t;
-    memset(&t, 0, sizeof(t));           //Zero out the transaction
-    t.length=8*len;                     //Command is 8 bits
-    t.tx_buffer=data;                   //The data is the cmd itself
-    ret=spi_device_polling_transmit(spi, &t);  //Transmit!
-    assert(ret==ESP_OK);                //Should have had no issues.
-}
-
-void aip1638_update(spi_device_handle_t spi)
+void aip1638_update(spi_device_handle_t spi, uint8_t *data_buf)
 {
     uint8_t data_cmd = 0x40;
     uint8_t disp_cmd = 0x8F;
@@ -96,52 +134,39 @@ void aip1638_update(spi_device_handle_t spi)
     spi_aip1638_write(spi, &disp_cmd, 1);
 }
 
-void spi_aip1638_update(void)
+void seg_display_task( void * pvParameters )
 {
-    esp_err_t ret;
-    spi_device_handle_t spi;
-    // 总线配置
-    spi_bus_config_t buscfg={
-        .miso_io_num=-1, //不需要输入，并且需要输入时用的也是3线SPI，即收发用的时同一个IO口
-        .mosi_io_num=PIN_NUM_MOSI,
-        .sclk_io_num=PIN_NUM_CLK,
-        .quadwp_io_num=-1,
-        .quadhd_io_num=-1,
-        .max_transfer_sz=32 //最大数据发送32字节
-    };
-    // 设备配置
-    spi_device_interface_config_t devcfg={
-        .clock_speed_hz=400*1000,               //Clock out at 800 KHz
-        .mode=3,                                //SPI mode 0
-        .spics_io_num=PIN_NUM_CS,               //CS pin
-        .flags=SPI_DEVICE_BIT_LSBFIRST,         //LSB, default MSB
-        .queue_size=7,                          //We want to be able to queue 7 transactions at a time
-    };
-    // 总线初始化
-    //Initialize the SPI bus
-    ret=spi_bus_initialize(AIP1638_HOST, &buscfg, DMA_CHAN);
-    ESP_ERROR_CHECK(ret);
-    // 添加设备
-    //Attach the LCD to the SPI bus
-    ret=spi_bus_add_device(AIP1638_HOST, &devcfg, &spi);
-    ESP_ERROR_CHECK(ret);
+	uint16_t count = 0;
+	uint16_t tmp;
+	uint8_t i;
+	uint8_t offset;
 
-    aip1638_update(spi);
+	while (true) {
+		count ++;
 
-    spi_bus_remove_device(spi);
-    spi_bus_free(AIP1638_HOST);
+		tmp = count;
+		for(i=0; i<8; i++) {
+			offset = tmp%10;
+			tmp = (uint16_t)tmp/10;
+			aip1638_usr_buf_write(i, seg_font_table[offset]);
+		}
+
+		aip1638_update(spi, data_buf);
+
+		vTaskDelay(1000 / portTICK_PERIOD_MS);
+	}
 }
-
 
 void aip1638_demo(void)
 {
-    aip1638_buf_write(0, seg_font_table[8]);
-    aip1638_buf_write(1, seg_font_table[8]);
-    aip1638_buf_write(2, seg_font_table[8]);
-    aip1638_buf_write(3, seg_font_table[8]);
-    aip1638_buf_write(4, seg_font_table[8]);
-    aip1638_buf_write(5, seg_font_table[8]);
-    aip1638_buf_write(6, seg_font_table[8]);
-    aip1638_buf_write(7, seg_font_table[8]);
-    spi_aip1638_update();
+	uint8_t i;
+
+	spi_aip1638_init();
+
+	for(i=0; i<8; i++) {
+		aip1638_usr_buf_write(i, seg_font_table[8]);
+	}
+	aip1638_update(spi, data_buf);
+
+    xTaskCreate(seg_display_task, "seg_display_task", 1024, NULL, 5, NULL);
 }

@@ -70,6 +70,7 @@ void usr_task1( void * pvParameters )
 {
 	for( ;; ){
 		time_update();
+//		aip1638_demo();
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
 	}
 }
@@ -99,6 +100,7 @@ void usr_request_weather_task( void * pvParameters )
 void app_main(void)
 {
 	aip1638_demo();
+
 	usr_lvgl();
 
 	// 固定路由参数
