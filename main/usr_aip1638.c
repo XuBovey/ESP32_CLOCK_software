@@ -78,7 +78,7 @@ void spi_aip1638_write(spi_device_handle_t spi, const uint8_t *data, int len)
 bit 7   6   5   4   3   2   1   0
     dp  g   f   e   d   c   b   a   hex flag
     0   0   1   1   1   1   1   1   3F  0
-    0   0   0   0   0   0   1   1   03  1
+    0   0   0   0   0   1   1   0   06  1
     0   1   0   1   1   0   1   1   5b  2
     0   1   0   0   1   1   1   1   4f  3
     0   1   1   0   0   1   1   0   66  4
@@ -97,7 +97,7 @@ bit 7   6   5   4   3   2   1   0
     0   0   1   1   1   0   0   0   38  L
     0   0   1   1   1   1   1   0   3E  U
 *******************/
-uint8_t seg_font_table[]={0x3F, 0x03, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x6f, 0x40, 0x80, 0x7b, 0x39, 0x79, 0x71, 0x76, 0x38, 0x3E};
+uint8_t seg_font_table[]={0x3F, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x6f, 0x40, 0x80, 0x7b, 0x39, 0x79, 0x71, 0x76, 0x38, 0x3E};
 uint8_t data_buf[16] = {0xc0, 0x00};
 
 void aip1638_usr_buf_write(uint8_t offset, uint8_t seg_font)
