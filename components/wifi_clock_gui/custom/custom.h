@@ -14,5 +14,8 @@
 #include "gui_guider.h"
 
 void custom_init(lv_ui *ui);
+void set_label_property(lv_obj_t * target, int id, char * val);
+
+//LV_IMG_DECLARE(img_aisha_png);
 
 #endif /* EVENT_CB_H_ */

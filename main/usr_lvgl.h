@@ -1,7 +1,7 @@
 /*
  * usr_lvgl.h
  *
- *  Created on: 2021Äê8ÔÂ26ÈÕ
+ *  Created on: 2021ï¿½ï¿½8ï¿½ï¿½26ï¿½ï¿½
  *      Author: Bovey
  */
 
@@ -9,6 +9,6 @@
 #define MAIN_USR_LVGL_H_
 
 void usr_lvgl(void);
-void start_ui(void);
+void time_update_to_lcd(char * data);
 
 #endif /* MAIN_USR_LVGL_H_ */

@@ -29,7 +29,10 @@
 
 #include "lvgl_helpers.h"
 
-//#include "lv_port_indev.h"
+#include "custom.h"
+#include "gui_guider.h"
+
+lv_ui guider_ui;
 
 /*********************
  *      DEFINES
@@ -42,7 +45,7 @@
  **********************/
 static void lv_tick_task(void *arg);
 static void guiTask(void *pvParameter);
-static void create_demo_application(void);
+static void create_usr_gui(void);
 
 /**********************
  *   APPLICATION MAIN
@@ -134,6 +137,7 @@ static void guiTask(void *pvParameter) {
     ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, LV_TICK_PERIOD_MS * 1000));
 
 //    create_demo_application();
+    create_usr_gui();
 
     while (1) {
         /* Delay 1 tick (assumes FreeRTOS tick is 10ms */
@@ -203,12 +207,18 @@ void create_demo_application(void)
 }
 #endif
 
-#include "generated/gui_guider.h"
 
-lv_ui guider_ui;
-void start_ui(void)
+void create_usr_gui(void)
 {
-	setup_ui(&guider_ui);
+	// setup_ui(&guider_ui);
+
+    setup_scr_main(&guider_ui);
+	lv_scr_load_anim(guider_ui.main, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
+}
+
+void time_update_to_lcd(char * data)
+{
+	set_label_property(guider_ui.main_label_time, 0, data);
 }
 
 static void lv_tick_task(void *arg) {

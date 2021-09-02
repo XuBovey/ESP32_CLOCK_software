@@ -1,9 +1,10 @@
 if(ESP_PLATFORM)
 
-file(GLOB_RECURSE SOURCES generated/*.c)
+
+file(GLOB_RECURSE SOURCES generated/*.c custom/*.c)
 
 idf_component_register(SRCS ${SOURCES}
-                       INCLUDE_DIRS  .
+                       INCLUDE_DIRS  ../ ../lvgl/src/lv_font ./generated ./generated/guider_fonts ./custom
                        REQUIRES lvgl)
 
 else()

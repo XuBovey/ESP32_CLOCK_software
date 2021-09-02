@@ -10,12 +10,13 @@ extern "C" {
 #endif
 
 #include "lvgl/lvgl.h"
-//#include "guider_fonts.h"
+#include "guider_fonts.h"
 
 typedef struct
 {
 	lv_obj_t *main;
-	lv_obj_t *main_bg_img;
+	lv_obj_t *main_back;
+	lv_obj_t *main_label_time;
 	lv_obj_t *main_lmeter_temp;
 	lv_obj_t *main_lmeter_humidity;
 	lv_obj_t *main_label_temp;
@@ -25,7 +26,6 @@ typedef struct
 void setup_ui(lv_ui *ui);
 extern lv_ui guider_ui;
 void setup_scr_main(lv_ui *ui);
-LV_IMG_DECLARE(_Aisha_alpha_240x240);
 
 #ifdef __cplusplus
 }

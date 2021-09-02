@@ -25,44 +25,43 @@
 #include "usr_aip1638.h"
 
 #include "usr_lvgl.h"
-//#include "wifi_clock_ui.h"
 
 #define TAG "main"
 
 void time_update(void)
 {
-	// 1. ¶¨Òå±äÁ¿-µ±Ç°Ê±¼ä£¬Êµ¼ÊÉÏÊÇÒ»¸ö³¤ÕûÐÎ±äÁ¿
+	// 1. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½-ï¿½ï¿½Ç°Ê±ï¿½ä£¬Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î±ï¿½ï¿½ï¿½
 	// #define	_TIME_T_ long
 	// typedef	_TIME_T_ time_t;
 	time_t now;
 
-	// 2. ¶¨Òå×Ö·ûÊý×éÓÃÓÚ´æ·ÅÈÕÆÚ×Ö·û
+	// 2. ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½
 	char strftime_buf[64];
 
-	// 3. ¶¨ÒåÄêÔÂÈÕ£¬Ê±·ÖÃë¸ñÊ½Ê±¼ä±äÁ¿
+	// 3. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ£ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½Ê½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½
 	struct tm timeinfo;
 
-	// 4. »ñÈ¡µ±Ç°Ê±¼ä£¬µÃµ½´Ó1970-1-1µ½ÏÞÖÆµÄÃë¼ÆÊý
+	// 4. ï¿½ï¿½È¡ï¿½ï¿½Ç°Ê±ï¿½ä£¬ï¿½Ãµï¿½ï¿½ï¿½1970-1-1ï¿½ï¿½ï¿½ï¿½ï¿½Æµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	// time_t	   time (time_t *_timer);
-	// ¸ù¾Ý£¨1£©ÖÐÖªµÀtime_tÊÇÒ»¸ö³¤ÕûÐÎ
-	// gettimeofdayº¯ÊýÒ²¿É»ñÈ¡µ±Ç°Ê±¼ä£¬µÃµ½µÄÊÇtimevalÀàÐÍµÄÊ±¼ä£¬°üº¬time_t
+	// ï¿½ï¿½ï¿½Ý£ï¿½1ï¿½ï¿½ï¿½ï¿½Öªï¿½ï¿½time_tï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	// gettimeofdayï¿½ï¿½ï¿½ï¿½Ò²ï¿½É»ï¿½È¡ï¿½ï¿½Ç°Ê±ï¿½ä£¬ï¿½Ãµï¿½ï¿½ï¿½ï¿½ï¿½timevalï¿½ï¿½ï¿½Íµï¿½Ê±ï¿½ä£¬ï¿½ï¿½ï¿½ï¿½time_t
 	//	struct timeval {
 	//		time_t		tv_sec;		/* seconds */
 	//		suseconds_t	tv_usec;	/* and microseconds */
 	//	};
-	// ËùÒÔ
+	// ï¿½ï¿½ï¿½ï¿½
 	time(&now);
 
 	// Set timezone to China Standard Time
 	setenv("TZ", "CST-8", 1);
 	tzset();
 
-	// 5. ¸ù¾ÝÃë¼ÆÊýµÃµ½µ±Ç°µÄÊ±¼ä£¨ÄêÔÂÈÕ-Ê±·ÖÃë£©
+	// 5. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ãµï¿½ï¿½ï¿½Ç°ï¿½ï¿½Ê±ï¿½ä£¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½-Ê±ï¿½ï¿½ï¿½ë£©
 	localtime_r(&now, &timeinfo);
-	// 6. ½«ÄêÔÂÈÕ×ª»»Îª×Ö·û´®
+	// 6. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½Îªï¿½Ö·ï¿½ï¿½ï¿½
 	strftime(strftime_buf, sizeof(strftime_buf), "%Y-%m-%d\n%I:%M:%S", &timeinfo);
 
-//	SetLabelProperty(time_lable, 0, strftime_buf);
+	time_update_to_lcd(strftime_buf);
 
 }
 
@@ -70,7 +69,6 @@ void usr_task1( void * pvParameters )
 {
 	for( ;; ){
 		time_update();
-//		aip1638_demo();
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
 	}
 }
@@ -99,28 +97,25 @@ void usr_request_weather_task( void * pvParameters )
 
 void app_main(void)
 {
-	// ÊýÂë¹ÜÏÔÊ¾
-	aip1638_demo();
-
-	// Æô¶¯GUI
+	// ï¿½ï¿½ï¿½ï¿½GUI
 	usr_lvgl();
 
-	// ¹Ì¶¨Â·ÓÉ²ÎÊý
+	// ï¿½Ì¶ï¿½Â·ï¿½É²ï¿½ï¿½ï¿½
 	wifi_init();
 
-	// Ö§³ÖÍøÂç²ÎÊý¿ÉÅäÖÃºóÆôÓÃ
+	// Ö§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ãºï¿½ï¿½ï¿½ï¿½ï¿½
 //	smart_config();
 
-	// Ê±¼äÍ¬²½ÈÎÎñ
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾
+	aip1638_demo();
+
+	// Ê±ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	xTaskCreate(usr_sntp_task, "usr_sntp_task", 4096, NULL, 5, NULL);
-	// ÌìÆø¸üÐÂÈÎÎñ
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	xTaskCreate(usr_request_weather_task, "usr_request_weather_task", 4096, NULL, 5, NULL);
 
 	xTaskCreate(led_strip_task, "led_strip_task", 4096, NULL, 5, NULL);
 
-//	BuildPages();
-//	ChangeScreen(screen_main, LV_SCR_LOAD_ANIM_NONE, 0, 0);
 	xTaskCreate(usr_task1, "usr_task1", 4096, NULL, 5, NULL);
-	start_ui();
 
 }
