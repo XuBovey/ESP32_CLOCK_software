@@ -99,8 +99,10 @@ void usr_request_weather_task( void * pvParameters )
 
 void app_main(void)
 {
+	// 数码管显示
 	aip1638_demo();
 
+	// 启动GUI
 	usr_lvgl();
 
 	// 固定路由参数
@@ -109,7 +111,9 @@ void app_main(void)
 	// 支持网络参数可配置后启用
 //	smart_config();
 
+	// 时间同步任务
 	xTaskCreate(usr_sntp_task, "usr_sntp_task", 4096, NULL, 5, NULL);
+	// 天气更新任务
 	xTaskCreate(usr_request_weather_task, "usr_request_weather_task", 4096, NULL, 5, NULL);
 
 	xTaskCreate(led_strip_task, "led_strip_task", 4096, NULL, 5, NULL);

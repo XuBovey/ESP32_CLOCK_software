@@ -42,9 +42,13 @@
 #include "esp_tls.h"
 #include "esp_crt_bundle.h"
 
+#include "cJSON.h"
+#include "unity.h"
+#include "stdio.h"
+
 #define WEB_SERVER          "api.seniverse.com"
 #define WEB_PORT            "80"
-#define WEB_URL             "https://api.seniverse.com/v3/weather/now.json"
+#define WEB_URL             "https://api.seniverse.com/v3/weather/daily.json"
 
 static const char *TAG = "https_request";
 
@@ -56,10 +60,9 @@ static const char *TAG = "https_request";
 //								"Host: "WEB_SERVER"\r\n"
 //								"Connection: close\r\n"
 //								"\r\n";
-
 static void https_get_request(esp_tls_cfg_t cfg, char * _city)
 {
-    char buf[512];
+    char buf[2048];
     int ret, len;
 
     struct esp_tls *tls = esp_tls_conn_http_new(WEB_URL, &cfg);
@@ -73,7 +76,7 @@ static void https_get_request(esp_tls_cfg_t cfg, char * _city)
 
 //    memset(buf,sizeof(buf),0);
     bzero(buf, sizeof(buf));
-    sprintf(buf, "GET %s?key=%s&location=%s&language=%s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
+    sprintf(buf, "GET %s?key=%s&location=%s&language=%s&unit=c&start=0&days=3 HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
     		WEB_URL, APIKEY, _city, language, WEB_SERVER);
 
     size_t written_bytes = 0;
@@ -83,7 +86,7 @@ static void https_get_request(esp_tls_cfg_t cfg, char * _city)
         						 buf + written_bytes,
 								 strlen(buf) - written_bytes);
         if (ret >= 0) {
-            ESP_LOGI(TAG, "%d bytes written", ret);
+            ESP_LOGI(TAG, "%d bytes written done", ret);
             written_bytes += ret;
         } else if (ret != ESP_TLS_ERR_SSL_WANT_READ  && ret != ESP_TLS_ERR_SSL_WANT_WRITE) {
             ESP_LOGE(TAG, "esp_tls_conn_write  returned: [0x%02X](%s)", ret, esp_err_to_name(ret));
@@ -113,15 +116,70 @@ static void https_get_request(esp_tls_cfg_t cfg, char * _city)
         }
 
         len = ret;
-        ESP_LOGD(TAG, "%d bytes read", len);
+        ESP_LOGI(TAG, "https %d bytes read", len);
+
         /* Print response directly to stdout as it is read */
         for (int i = 0; i < len; i++) {
             putchar(buf[i]);
         }
         putchar('\n'); // JSON output doesn't have a newline at end
+
+        // JSONÊý¾Ý½âÎö
+        char * sJsonData = strstr(buf, "{\"");
+        if(NULL == sJsonData) {
+        	break;
+        }
+
+        cJSON *pInfoItem = NULL;
+        cJSON *pInfoObj = NULL;
+        cJSON *root = cJSON_Parse(sJsonData);
+        if(NULL != root) {
+        	pInfoObj = cJSON_GetObjectItem(root, "results");
+        	if(NULL == pInfoObj) {
+        		ESP_LOGE(TAG, "pInfoObj is null for results");
+        		cJSON_Delete(root);
+        		break;
+        	}
+        	ESP_LOGI(TAG, "array size = %d", cJSON_GetArraySize(pInfoObj));
+
+			pInfoItem = cJSON_GetArrayItem(pInfoObj, 0);
+			if(NULL == pInfoItem) {
+				ESP_LOGE(TAG, "pInfoItem is null for results[0]");
+				cJSON_Delete(root);
+				break;
+			}
+			pInfoObj = cJSON_GetObjectItem(pInfoItem, "daily");
+			if(NULL == pInfoObj) {
+				ESP_LOGE(TAG, "pInfoItem is null for daily");
+				cJSON_Delete(root);
+				break;
+			}
+			ESP_LOGI(TAG, "array size = %d", cJSON_GetArraySize(pInfoObj));
+
+			pInfoObj = cJSON_GetArrayItem(pInfoObj, 0);
+			if(NULL == pInfoObj) {
+				ESP_LOGE(TAG, "pInfoItem is null for daily[0]");
+				cJSON_Delete(root);
+				break;
+			}
+
+			pInfoItem = cJSON_GetObjectItem(pInfoObj, "date");
+			ESP_LOGI(TAG, "date = %s", cJSON_Print(pInfoItem));
+			pInfoItem = cJSON_GetObjectItem(pInfoObj, "text_day");
+			ESP_LOGI(TAG, "text_day = %s", cJSON_Print(pInfoItem));
+			pInfoItem = cJSON_GetObjectItem(pInfoObj, "text_night");
+			ESP_LOGI(TAG, "text_night = %s", cJSON_Print(pInfoItem));
+
+			cJSON_Delete(root);
+        }else{
+        	ESP_LOGE(TAG, "json data is null");
+        }
+
+        break;
     } while (1);
 
 exit:
+
     esp_tls_conn_delete(tls);
 //    for (int countdown = 10; countdown >= 0; countdown--) {
 //        ESP_LOGI(TAG, "%d...", countdown);
