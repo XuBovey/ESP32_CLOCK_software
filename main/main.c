@@ -25,7 +25,7 @@
 #include "usr_aip1638.h"
 
 #include "usr_lvgl.h"
-#include "wifi_clock_ui.h"
+//#include "wifi_clock_ui.h"
 
 #define TAG "main"
 
@@ -62,7 +62,7 @@ void time_update(void)
 	// 6. 将年月日转换为字符串
 	strftime(strftime_buf, sizeof(strftime_buf), "%Y-%m-%d\n%I:%M:%S", &timeinfo);
 
-	SetLabelProperty(time_lable, 0, strftime_buf);
+//	SetLabelProperty(time_lable, 0, strftime_buf);
 
 }
 
@@ -118,8 +118,9 @@ void app_main(void)
 
 	xTaskCreate(led_strip_task, "led_strip_task", 4096, NULL, 5, NULL);
 
-	BuildPages();
-	ChangeScreen(screen_main, LV_SCR_LOAD_ANIM_NONE, 0, 0);
+//	BuildPages();
+//	ChangeScreen(screen_main, LV_SCR_LOAD_ANIM_NONE, 0, 0);
 	xTaskCreate(usr_task1, "usr_task1", 4096, NULL, 5, NULL);
+	start_ui();
 
 }

@@ -165,6 +165,7 @@ static void event_handler(lv_obj_t * obj, lv_event_t event)
     }
 }
 
+#if 0
 void create_demo_application(void)
 {
     lv_obj_t  * calendar = lv_calendar_create(lv_scr_act(), NULL);
@@ -199,6 +200,15 @@ void create_demo_application(void)
     highlighted_days[2].day = 22;
 
     lv_calendar_set_highlighted_dates(calendar, highlighted_days, 3);
+}
+#endif
+
+#include "generated/gui_guider.h"
+
+lv_ui guider_ui;
+void start_ui(void)
+{
+	setup_ui(&guider_ui);
 }
 
 static void lv_tick_task(void *arg) {

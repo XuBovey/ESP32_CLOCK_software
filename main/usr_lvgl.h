@@ -9,5 +9,6 @@
 #define MAIN_USR_LVGL_H_
 
 void usr_lvgl(void);
+void start_ui(void);
 
 #endif /* MAIN_USR_LVGL_H_ */
