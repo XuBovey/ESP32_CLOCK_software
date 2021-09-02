@@ -10,5 +10,7 @@
 
 void usr_lvgl(void);
 void time_update_to_lcd(char * data);
+void temp_update_to_lcd(float data);
+void humi_update_to_lcd(float data);
 
 #endif /* MAIN_USR_LVGL_H_ */

@@ -76,6 +76,25 @@ void led_strip_hsv2rgb(uint32_t h, uint32_t s, uint32_t v, uint32_t *r, uint32_t
     }
 }
 
+void led_strip_update_init(led_strip_t *strip)
+{
+    uint32_t red = 0;
+    uint32_t green = 0;
+    uint32_t blue = 0;
+    uint16_t hue = 0;
+
+	for (int j = 0; j < CONFIG_STRIP_LED_NUMBER; j ++) {
+		// Build RGB values
+		hue = j * 360 / CONFIG_STRIP_LED_NUMBER;
+		led_strip_hsv2rgb(hue, 100, 2, &red, &green, &blue);
+		// Write RGB values to strip driver
+		ESP_ERROR_CHECK(strip->set_pixel(strip, j, red, green, blue));
+	}
+	// Flush RGB values to LEDs
+	ESP_ERROR_CHECK(strip->refresh(strip, 100));
+
+}
+
 void led_strip_update_clock(led_strip_t *strip)
 {
     uint32_t red = 0;
@@ -151,8 +170,12 @@ void led_strip_task( void * pvParameters )
     // Clear LED strip (turn off all LEDs)
     ESP_ERROR_CHECK(strip->clear(strip, 100));
 
+    led_strip_update_init(strip);
+    vTaskDelay(pdMS_TO_TICKS(EXAMPLE_CHASE_SPEED_MS*3));
+
     // Show simple rainbow chasing pattern
 	ESP_LOGI(TAG, "LED Rainbow Chase Start");
+
 	while (true) {
 		led_strip_update_clock(strip);
 

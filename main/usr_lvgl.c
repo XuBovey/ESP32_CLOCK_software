@@ -221,6 +221,21 @@ void time_update_to_lcd(char * data)
 	set_label_property(guider_ui.main_label_time, 0, data);
 }
 
+
+void temp_update_to_lcd(float data)
+{
+	char buf[10]={0};
+	sprintf(buf,"%.1f\n°„C",data);
+	set_label_property(guider_ui.main_label_temp, 0, buf);
+}
+
+void humi_update_to_lcd(float data)
+{
+	char buf[10]={0};
+	sprintf(buf,"%.1f\n%c",data, '%');
+	set_label_property(guider_ui.main_label_humidity, 0, buf);
+}
+
 static void lv_tick_task(void *arg) {
     (void) arg;
 

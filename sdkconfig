@@ -126,7 +126,7 @@ CONFIG_PARTITION_TABLE_MD5=y
 # end of Partition Table
 
 #
-# Example Configuration
+# NEUI Configuration
 #
 CONFIG_ESP_WIFI_SSID="setting..."
 CONFIG_ESP_WIFI_PASSWORD="loading...@"
@@ -136,7 +136,16 @@ CONFIG_SNTP_TIME_SYNC_METHOD_IMMED=y
 # CONFIG_SNTP_TIME_SYNC_METHOD_CUSTOM is not set
 CONFIG_RMT_TX_GPIO=19
 CONFIG_STRIP_LED_NUMBER=60
-# end of Example Configuration
+
+#
+# I2C Master
+#
+CONFIG_I2C_MASTER_SCL=33
+CONFIG_I2C_MASTER_SDA=32
+CONFIG_I2C_MASTER_PORT_NUM=1
+CONFIG_I2C_MASTER_FREQUENCY=80000
+# end of I2C Master
+# end of NEUI Configuration
 
 #
 # Compiler options

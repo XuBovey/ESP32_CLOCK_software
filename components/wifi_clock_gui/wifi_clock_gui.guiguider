@@ -396,7 +396,7 @@
 					"desY": 0,
 					"path_type": "linear",
 					"duration": 100,
-					"width": 60,
+					"width": 64,
 					"height": 0,
 					"text": "37",
 					"text_align": "center",
@@ -849,7 +849,7 @@
 							110
 						],
 						"size": [
-							60,
+							64,
 							0
 						],
 						"is_move_animation": false,
