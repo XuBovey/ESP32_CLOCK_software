@@ -24,8 +24,8 @@
 #include "usr_led_strip.h"
 #include "usr_aip1638.h"
 #include "aht21.h"
-
 #include "usr_lvgl.h"
+#include "usr_ledc.h"
 
 #define TAG "main"
 
@@ -126,4 +126,5 @@ void app_main(void)
 
 	xTaskCreate(usr_task1, "usr_task1", 4096, NULL, 5, NULL);
 
+	usr_led();
 }
