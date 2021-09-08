@@ -86,4 +86,15 @@ int lightbulb_set_hue(float value);
  */
 int lightbulb_set_brightness(int value);
 
+/**
+ * @brief set the color of the lightbulb
+ *
+ * @param value The rgb value
+ *
+ * @return 
+ *     - 0 : OK
+ *     - others : fail
+ */
+int lightbulb_set_rgb(uint32_t r, uint32_t g, uint32_t b);
+
 #endif /* _LIGHTBULB_H_ */

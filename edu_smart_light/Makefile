@@ -6,8 +6,6 @@ PROJECT_NAME := smart_light
 
 EXTRA_COMPONENT_DIRS := $(realpath ../../..)
 
-chip := esp32
-
 SDKCONFIG_DEFAULTS := sdkconfig_$(chip).defaults
 
 include $(IDF_PATH)/make/project.mk

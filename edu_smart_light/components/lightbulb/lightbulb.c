@@ -30,6 +30,7 @@
 #include "driver/ledc.h"
 #endif
 #include "esp_log.h"
+#include "math.h"
 
 typedef struct rgb {
     uint8_t r;  // 0-100 %
@@ -46,11 +47,11 @@ typedef struct hsp {
 
 /* LED numbers below are for ESP-WROVER-KIT */
 /* Red LED */
-#define LEDC_IO_0 (0)
+#define LEDC_IO_0 (23)
 /* Green LED */
-#define LEDC_IO_1 (2)
+#define LEDC_IO_1 (22)
 /* Blued LED */
-#define LEDC_IO_2 (4)
+#define LEDC_IO_2 (21)
 
 #define PWM_DEPTH (1023)
 #define PWM_TARGET_DUTY 8192
@@ -100,13 +101,59 @@ static void lightbulb_set_aim(uint32_t r, uint32_t g, uint32_t b, uint32_t cw, u
     pwm_set_duty(LEDC_CHANNEL_2, b);
     pwm_start();
 #else
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, r);
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, g);
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_2, b);
+    ESP_LOGI(TAG, "lightbulb_set_aim : r:%d g:%d b:%d", PWM_TARGET_DUTY - r, PWM_TARGET_DUTY - g, PWM_TARGET_DUTY - b);
+
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, PWM_TARGET_DUTY - r);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, PWM_TARGET_DUTY - g);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_2, PWM_TARGET_DUTY - b);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_2);
 #endif
+}
+
+
+float kmax(float a, float b, float c) {
+   return ((a > b)? (a > c ? a : c) : (b > c ? b : c));
+}
+
+float kmin(float a, float b, float c) {
+   return ((a < b)? (a < c ? a : c) : (b < c ? b : c));
+}
+
+int rgb_to_hsv(float r, float g, float b, hsp_t * hsv) {
+   // R, G, B values are divided by 255
+   // to change the range from 0..255 to 0..1:
+   float h , s, v;
+   r /= 255.0;
+   g /= 255.0;
+   b /= 255.0;
+   float cmax = kmax(r, g, b); // maximum of r, g, b
+   float cmin = kmin(r, g, b); // minimum of r, g, b
+   float diff = cmax-cmin; // diff of cmax and cmin.
+   if (cmax == cmin)
+      h = 0;
+   else if (cmax == r)
+      h = fmod((60 * ((g - b) / diff) + 360), 360.0);
+   else if (cmax == g)
+      h = fmod((60 * ((b - r) / diff) + 120), 360.0);
+   else if (cmax == b)
+      h = fmod((60 * ((r - g) / diff) + 240), 360.0);
+    else
+        h = 0;
+   // if cmax equal zero
+    if (cmax == 0)
+        s = 0;
+    else
+        s = (diff / cmax) * 100;
+    // compute v
+    v = cmax * 100;
+    //    printf("h s v=(%f, %f, %f)\n", h, s, v );
+    hsv->s = s;
+    hsv->h = h;
+    hsv->b = v;
+
+  return 0;
 }
 
 /**
@@ -323,5 +370,20 @@ int lightbulb_set_brightness(int value)
     if (true == s_on)
         lightbulb_update();
 
+    return 0;
+}
+
+int lightbulb_set_rgb(uint32_t r, uint32_t g, uint32_t b)
+{
+    hsp_t hsv;
+    rgb_to_hsv(r, g, b, &hsv);
+
+    s_hsb_val.s = hsv.s;
+    s_hsb_val.h = hsv.h;
+
+    ESP_LOGI(TAG, "lightbulb_set_rgb : s:%d, h:%d", s_hsb_val.s, s_hsb_val.h);
+
+    if (true == s_on)
+        lightbulb_update();
     return 0;
 }

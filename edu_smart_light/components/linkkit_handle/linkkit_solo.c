@@ -138,7 +138,7 @@ static int user_trigger_event_reply_event_handler(const int devid, const int msg
 static int user_property_set_event_handler(const int devid, const char *request, const int request_len)
 {
     int res = 0;
-    cJSON *root = NULL, *LightSwitch = NULL, *LightColor = NULL;
+    cJSON *root = NULL, *LightSwitch = NULL, *LightColor = NULL, *LightBrightess = NULL;
     ESP_LOGI(TAG,"Property Set Received, Devid: %d, Request: %s", devid, request);
     
     lightbulb_set_brightness(78);
@@ -156,22 +156,42 @@ static int user_property_set_event_handler(const int devid, const char *request,
     }
 
     /** Switch Lightbulb On/Off   */
-    LightSwitch = cJSON_GetObjectItem(root, "LightSwitch");
+    LightSwitch = cJSON_GetObjectItem(root, "powerstate");
     if (LightSwitch) {
         lightbulb_set_on(LightSwitch->valueint);
     } 
 
-    /** Switch Lightbulb Hue */
-    LightSwitch = cJSON_GetObjectItem(root, "RGBColor");
+    /** Switch Lightbulb Hue for aliyun*/
+    LightSwitch = cJSON_GetObjectItem(root, "HSVColor");
     if (LightSwitch) {
-        LightColor = cJSON_GetObjectItem(LightSwitch, "Red");
+        LightColor = cJSON_GetObjectItem(LightSwitch, "Hue");
         lightbulb_set_hue(LightColor ? LightColor->valueint : 0);
-        LightColor = cJSON_GetObjectItem(LightSwitch, "Green");
-        lightbulb_set_hue(LightColor ? LightColor->valueint : 120);
-        LightColor = cJSON_GetObjectItem(LightSwitch, "Blue");
-        lightbulb_set_hue(LightColor ? LightColor->valueint : 240);
+
+        LightColor = cJSON_GetObjectItem(LightSwitch, "Saturation");
+        lightbulb_set_saturation(LightColor ? LightColor->valueint : 0);
+
+        LightColor = cJSON_GetObjectItem(LightSwitch, "Value");
+        lightbulb_set_brightness(LightColor ? LightColor->valueint : 0);
+
     }
-    
+
+    /** Switch Lightbulb Hue for aliyun tianmall*/
+    LightBrightess = cJSON_GetObjectItem(root, "brightness");
+    if (LightBrightess) {
+        lightbulb_set_brightness(LightBrightess ? LightBrightess->valueint : 0);
+    }
+
+    LightColor = cJSON_GetObjectItem(root, "color");
+    if (LightColor) {
+        uint32_t r, g, b;
+        
+        r = (LightColor->valueint >>16 ) & 0xFF;
+        g = (LightColor->valueint >> 8 ) & 0xFF;
+        b = (LightColor->valueint >> 0 ) & 0xFF;
+
+        lightbulb_set_rgb(r, g, b);
+    }
+
     cJSON_Delete(root);
 
     res = IOT_Linkkit_Report(EXAMPLE_MASTER_DEVID, ITM_MSG_POST_PROPERTY,
