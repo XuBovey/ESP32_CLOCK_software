@@ -1,0 +1,6 @@
+key,type,encoding,value
+aliyun-key,namespace,,
+DeviceName,data,string,iot_rgb_light_001
+DeviceSecret,data,string,4efbe6361aaf12514cfec861cecb6f8e
+ProductKey,data,string,a1y4rq94Nss
+ProductSecret,data,string,yNl8IOVHcEbWftp8
