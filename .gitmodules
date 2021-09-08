@@ -1,0 +1,3 @@
+[submodule "edu_smart_light/components/esp-aliyun"]
+	path = edu_smart_light/components/esp-aliyun
+	url = https://github.com/espressif/esp-aliyun.git
