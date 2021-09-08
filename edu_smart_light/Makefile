@@ -4,7 +4,7 @@
 #
 PROJECT_NAME := smart_light
 
-EXTRA_COMPONENT_DIRS := $(realpath ../../..)
+# EXTRA_COMPONENT_DIRS := $(realpath ../../../..)
 
 SDKCONFIG_DEFAULTS := sdkconfig_$(chip).defaults
 
