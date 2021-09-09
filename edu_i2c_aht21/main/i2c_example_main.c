@@ -22,8 +22,6 @@ static const char *TAG = "i2c-example";
 #define _I2C_NUMBER(num) I2C_NUM_##num
 #define I2C_NUMBER(num) _I2C_NUMBER(num)
 
-#define DATA_LENGTH 512                  /*!< Data buffer length of test buffer */
-#define RW_TEST_LENGTH 128               /*!< Data length for r/w test, [0,DATA_LENGTH] */
 #define DELAY_TIME_BETWEEN_ITEMS_MS 1000 /*!< delay time between different test items */
 
 #define I2C_MASTER_SCL_IO CONFIG_I2C_MASTER_SCL               /*!< gpio number for I2C master clock */
@@ -284,14 +282,7 @@ uint32_t AHT20_GetMeasureResult(float* temp, float* humi)
 static esp_err_t i2c_master_sensor_test(i2c_port_t i2c_num)
 {
     int ret;
-    float temp = 0.0, humi = 0.0;
 
-    AHT20_Calibrate();
-
-    AHT20_StartMeasure();
-
-    AHT20_GetMeasureResult(&temp, &humi);
-    printf("AHT20_GetMeasureResult: temp = %.2f, humi = %.2f\r\n", temp, humi);
 
     return ESP_OK;
 }
@@ -323,13 +314,19 @@ static void i2c_test_task(void *arg)
     int ret;
     uint32_t task_idx = (uint32_t)arg;
 
-    uint8_t sensor_data_h, sensor_data_l;
     int cnt = 0;
+    float temp = 0.0, humi = 0.0;
+
+    AHT20_Calibrate();
     while (1) {
         ESP_LOGI(TAG, "TASK[%d] test cnt: %d", task_idx, cnt++);
-        ret = i2c_master_sensor_test(I2C_MASTER_NUM);
-        vTaskDelay((DELAY_TIME_BETWEEN_ITEMS_MS * (task_idx + 1)) / portTICK_RATE_MS);
 
+        AHT20_StartMeasure();
+
+        AHT20_GetMeasureResult(&temp, &humi);
+        printf("AHT20_GetMeasureResult: temp = %.2f, humi = %.2f\r\n", temp, humi);
+
+        vTaskDelay((DELAY_TIME_BETWEEN_ITEMS_MS * (task_idx + 1)) / portTICK_RATE_MS);
     }
     vSemaphoreDelete(print_mux);
     vTaskDelete(NULL);
