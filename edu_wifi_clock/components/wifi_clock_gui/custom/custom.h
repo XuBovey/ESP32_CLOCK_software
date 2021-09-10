@@ -16,6 +16,8 @@
 void custom_init(lv_ui *ui);
 void set_label_property(lv_obj_t * target, int id, char * val);
 
-//LV_IMG_DECLARE(img_aisha_png);
+LV_IMG_DECLARE(icon_weather_0);
+LV_IMG_DECLARE(icon_weather_4);
+LV_IMG_DECLARE(icon_weather_9);
 
 #endif /* EVENT_CB_H_ */

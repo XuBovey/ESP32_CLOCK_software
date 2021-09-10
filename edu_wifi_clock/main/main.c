@@ -31,39 +31,31 @@
 
 void disp_update(void)
 {
-	// 1. 锟斤拷锟斤拷锟斤拷锟�-锟斤拷前时锟戒，实锟斤拷锟斤拷锟斤拷一锟斤拷锟斤拷锟斤拷锟轿憋拷锟斤拷
+	// 1. 定义变量-当前时间，实际上是一个长整形变量
 	// #define	_TIME_T_ long
 	// typedef	_TIME_T_ time_t;
 	time_t now;
 
-	// 2. 锟斤拷锟斤拷锟街凤拷锟斤拷锟斤拷锟斤拷锟节达拷锟斤拷锟斤拷锟斤拷址锟�
+	// 2. 定义字符数组用于存放日期字符
 	char strftime_buf[64];
 
-	// 3. 锟斤拷锟斤拷锟斤拷锟斤拷锟秸ｏ拷时锟斤拷锟斤拷锟绞绞憋拷锟斤拷锟斤拷
+	// 3. 定义年月日，时分秒格式时间变量
 	struct tm timeinfo;
 
-	// 4. 锟斤拷取锟斤拷前时锟戒，锟矫碉拷锟斤拷1970-1-1锟斤拷锟斤拷锟狡碉拷锟斤拷锟斤拷锟�
+	// 4. 获取当前时间，得到从1970-1-1到限制的秒计数
 	// time_t	   time (time_t *_timer);
-	// 锟斤拷锟捷ｏ拷1锟斤拷锟斤拷知锟斤拷time_t锟斤拷一锟斤拷锟斤拷锟斤拷锟斤拷
-	// gettimeofday锟斤拷锟斤拷也锟缴伙拷取锟斤拷前时锟戒，锟矫碉拷锟斤拷锟斤拷timeval锟斤拷锟酵碉拷时锟戒，锟斤拷锟斤拷time_t
-	//	struct timeval {
-	//		time_t		tv_sec;		/* seconds */
-	//		suseconds_t	tv_usec;	/* and microseconds */
-	//	};
-	// 锟斤拷锟斤拷
 	time(&now);
 
 	// Set timezone to China Standard Time
 	setenv("TZ", "CST-8", 1);
 	tzset();
 
-	// 5. 锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷玫锟斤拷锟角帮拷锟绞憋拷洌拷锟斤拷锟斤拷锟�-时锟斤拷锟诫）
+	// 5. 根据秒计数得到当前的时间（年月日-时分秒）
 	localtime_r(&now, &timeinfo);
-	// 6. 锟斤拷锟斤拷锟斤拷锟斤拷转锟斤拷为锟街凤拷锟斤拷
+	// 6. 将年月日转换为字符串
 	strftime(strftime_buf, sizeof(strftime_buf), "%Y-%m-%d\n%I:%M:%S", &timeinfo);
 
 	time_update_to_lcd(strftime_buf);
-
 
 	float temp, humi;
 	read_aht21_data(&temp, &humi);
@@ -97,34 +89,36 @@ void usr_request_weather_task( void * pvParameters )
 		{
 			https_request_weather();
 		}
-		vTaskDelay(60000 / portTICK_PERIOD_MS);
+		vTaskDelay(300000 / portTICK_PERIOD_MS);
 	}
 }
 
 void app_main(void)
 {
-	// 锟斤拷锟斤拷GUI
+	// Start lvgl and gui
 	usr_lvgl();
 
-	// 锟教讹拷路锟缴诧拷锟斤拷
+	// wifi init
 	wifi_init();
 
-	// 支锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷煤锟斤拷锟斤拷锟�
-//	smart_config();
-
-	// 锟斤拷锟斤拷锟斤拷锟绞�
+#if 0
+	// not use
+	smart_config();
+#endif
+	// 7segs led demo
 	aip1638_demo();
 
+	// 
 	aht21_start();
 
-	// 时锟斤拷同锟斤拷锟斤拷锟斤拷
+	// task for sntp get time from internet
 	xTaskCreate(usr_sntp_task, "usr_sntp_task", 4096, NULL, 5, NULL);
-	// 锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷
+	// task for get weather data from xinzhitianqi (https://seniverse.yuque.com/) 
 	xTaskCreate(usr_request_weather_task, "usr_request_weather_task", 4096, NULL, 5, NULL);
-
+	// task for ws2812 to display clock
 	xTaskCreate(led_strip_task, "led_strip_task", 4096, NULL, 5, NULL);
-
+	// task for update time temp him data to lcd
 	xTaskCreate(usr_task1, "usr_task1", 4096, NULL, 5, NULL);
-
+	// led blink demo
 	usr_led();
 }

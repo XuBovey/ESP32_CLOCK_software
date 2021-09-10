@@ -46,6 +46,8 @@
 #include "unity.h"
 #include "stdio.h"
 
+#include "usr_lvgl.h"
+
 #define WEB_SERVER          "api.seniverse.com"
 #define WEB_PORT            "80"
 #define WEB_URL             "https://api.seniverse.com/v3/weather/daily.json"
@@ -80,7 +82,7 @@ static void https_get_request(esp_tls_cfg_t cfg, char * _city)
     		WEB_URL, APIKEY, _city, language, WEB_SERVER);
 
     size_t written_bytes = 0;
-    ESP_LOGI(TAG, "NEED %d bytes written:\r\n%s", strlen(buf), buf);
+    // ESP_LOGI(TAG, "NEED %d bytes written:\r\n%s", strlen(buf), buf);
     do {
         ret = esp_tls_conn_write(tls,
         						 buf + written_bytes,
@@ -119,56 +121,51 @@ static void https_get_request(esp_tls_cfg_t cfg, char * _city)
         ESP_LOGI(TAG, "https %d bytes read", len);
 
         /* Print response directly to stdout as it is read */
+        #if 0
         for (int i = 0; i < len; i++) {
             putchar(buf[i]);
         }
         putchar('\n'); // JSON output doesn't have a newline at end
+        #endif
 
-        // JSONÊý¾Ý½âÎö
+        // JSON
         char * sJsonData = strstr(buf, "{\"");
         if(NULL == sJsonData) {
         	break;
         }
 
-        cJSON *pInfoItem = NULL;
-        cJSON *pInfoObj = NULL;
         cJSON *root = cJSON_Parse(sJsonData);
         if(NULL != root) {
-        	pInfoObj = cJSON_GetObjectItem(root, "results");
-        	if(NULL == pInfoObj) {
-        		ESP_LOGE(TAG, "pInfoObj is null for results");
+        	cJSON *pResults = cJSON_GetObjectItem(root, "results");
+        	if(NULL == pResults) {
+        		ESP_LOGE(TAG, "pResults is null for results");
         		cJSON_Delete(root);
         		break;
         	}
-        	ESP_LOGI(TAG, "array size = %d", cJSON_GetArraySize(pInfoObj));
+        	// ESP_LOGI(TAG, "array size = %d", cJSON_GetArraySize(pResults));
 
-			pInfoItem = cJSON_GetArrayItem(pInfoObj, 0);
-			if(NULL == pInfoItem) {
-				ESP_LOGE(TAG, "pInfoItem is null for results[0]");
-				cJSON_Delete(root);
-				break;
-			}
-			pInfoObj = cJSON_GetObjectItem(pInfoItem, "daily");
-			if(NULL == pInfoObj) {
-				ESP_LOGE(TAG, "pInfoItem is null for daily");
-				cJSON_Delete(root);
-				break;
-			}
-			ESP_LOGI(TAG, "array size = %d", cJSON_GetArraySize(pInfoObj));
+			pResults = cJSON_GetArrayItem(pResults, 0);
+            cJSON *pLastUpdate  = cJSON_GetObjectItem(pResults, "last_update");
+            ESP_LOGI(TAG, "last_update = %s", cJSON_Print(pLastUpdate));
 
-			pInfoObj = cJSON_GetArrayItem(pInfoObj, 0);
-			if(NULL == pInfoObj) {
-				ESP_LOGE(TAG, "pInfoItem is null for daily[0]");
-				cJSON_Delete(root);
-				break;
-			}
+			cJSON *pDailyArray = cJSON_GetObjectItem(pResults, "daily");
+			ESP_LOGI(TAG, "array size = %d", cJSON_GetArraySize(pDailyArray));
 
-			pInfoItem = cJSON_GetObjectItem(pInfoObj, "date");
-			ESP_LOGI(TAG, "date = %s", cJSON_Print(pInfoItem));
-			pInfoItem = cJSON_GetObjectItem(pInfoObj, "text_day");
-			ESP_LOGI(TAG, "text_day = %s", cJSON_Print(pInfoItem));
-			pInfoItem = cJSON_GetObjectItem(pInfoObj, "text_night");
-			ESP_LOGI(TAG, "text_night = %s", cJSON_Print(pInfoItem));
+            for(int i = 0; i < cJSON_GetArraySize(pDailyArray); i++){
+                cJSON *pDaily = cJSON_GetArrayItem(pDailyArray, i);
+                cJSON *pData = cJSON_GetObjectItem(pDaily, "date");
+                cJSON *pTextDay = cJSON_GetObjectItem(pDaily, "text_day");
+                cJSON *pCodeDay = cJSON_GetObjectItem(pDaily, "code_day");
+                cJSON *pTextNight = cJSON_GetObjectItem(pDaily, "text_night");
+                
+                ESP_LOGI(TAG, "date = %s", pData->valuestring);
+                ESP_LOGI(TAG, "text_day = %s", pTextDay->valuestring);
+                ESP_LOGI(TAG, "code_day = %s", pCodeDay->valuestring);
+                ESP_LOGI(TAG, "text_night = %s", pTextNight->valuestring);
+
+                int code = atoi(pCodeDay->valuestring);
+                weather_update_to_ldc(i, code);
+            }
 
 			cJSON_Delete(root);
         }else{

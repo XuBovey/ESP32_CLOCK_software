@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "https_request_weather.h": "c"
+        "https_request_weather.h": "c",
+        "gui_guider.h": "c"
     }
 }
