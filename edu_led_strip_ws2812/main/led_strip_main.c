@@ -13,6 +13,9 @@
 #include "driver/rmt.h"
 #include "led_strip.h"
 
+#include <time.h>
+#include <sys/time.h>
+
 static const char *TAG = "example";
 
 #define RMT_TX_CHANNEL RMT_CHANNEL_0
@@ -96,21 +99,52 @@ void app_main(void)
     ESP_ERROR_CHECK(strip->clear(strip, 100));
     // Show simple rainbow chasing pattern
     ESP_LOGI(TAG, "LED Rainbow Chase Start");
+
+    time_t now;
+    struct tm timeinfo;
+    time(&now);
+    localtime_r(&now, &timeinfo);
+
+    ESP_LOGI(TAG, "time:%d:%d:%d",timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+
     while (true) {
-        {
-            for (int j = 0; j < CONFIG_EXAMPLE_STRIP_LED_NUMBER; j ++) {
-                // Build RGB values
-                hue = j * 360 / CONFIG_EXAMPLE_STRIP_LED_NUMBER + start_rgb;
-                led_strip_hsv2rgb(hue, 90, 5, &red, &green, &blue);
-                // Write RGB values to strip driver
-                ESP_ERROR_CHECK(strip->set_pixel(strip, j, red, green, blue));
-            }
-            // Flush RGB values to LEDs
-            ESP_ERROR_CHECK(strip->refresh(strip, 100));
-            vTaskDelay(pdMS_TO_TICKS(EXAMPLE_CHASE_SPEED_MS));
-//            strip->clear(strip, 50);
-//            vTaskDelay(pdMS_TO_TICKS(EXAMPLE_CHASE_SPEED_MS));
-        }
-        start_rgb += 60;
+    	time(&now);
+		localtime_r(&now, &timeinfo);
+		ESP_LOGI(TAG, "time:%d:%d:%d",timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+
+		for (int j = 0; j < CONFIG_EXAMPLE_STRIP_LED_NUMBER; j += 1) {
+			// Build RGB values
+			hue = j * 360 / CONFIG_EXAMPLE_STRIP_LED_NUMBER + start_rgb;
+			led_strip_hsv2rgb(hue, 100, 1, &red, &green, &blue);
+			// Write RGB values to strip driver
+			ESP_ERROR_CHECK(strip->set_pixel(strip, j, red, green, blue));
+
+			// 判断小时
+			if(((timeinfo.tm_hour%12)*5 + timeinfo.tm_min/60*5) == (j+1)) {
+				// 重新配置当前LED的颜色
+				led_strip_hsv2rgb(240, 100, 10, &red, &green, &blue);
+				ESP_ERROR_CHECK(strip->set_pixel(strip, j, red, green, blue));
+			}
+
+			// 判断分钟
+			if(timeinfo.tm_min == (j+1)) {
+				// 重新配置当前LED的颜色
+				led_strip_hsv2rgb(120, 100, 10, &red, &green, &blue);
+				ESP_ERROR_CHECK(strip->set_pixel(strip, j, red, green, blue));
+			}
+			// 判断秒
+			if(timeinfo.tm_sec == (j+1)) {
+				// 重新配置当前LED的颜色
+				led_strip_hsv2rgb(0, 100, 10, &red, &green, &blue);
+				ESP_ERROR_CHECK(strip->set_pixel(strip, j, red, green, blue));
+			}
+		}
+
+		// Flush RGB values to LEDs
+		ESP_ERROR_CHECK(strip->refresh(strip, 100));
+		vTaskDelay(pdMS_TO_TICKS(EXAMPLE_CHASE_SPEED_MS));
+//		strip->clear(strip, 50);
+//		vTaskDelay(pdMS_TO_TICKS(EXAMPLE_CHASE_SPEED_MS));
+
     }
 }
