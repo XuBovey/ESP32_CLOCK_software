@@ -98,7 +98,7 @@ bit 7   6   5   4   3   2   1   0
     0   0   1   1   1   1   1   0   3E  U
 *******************/
 uint8_t seg_font_table[]={0x3F, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x6f, 0x40, 0x80, 0x7b, 0x39, 0x79, 0x71, 0x76, 0x38, 0x3E};
-uint8_t data_buf[16] = {0xc0, 0x00};
+uint8_t data_buf[17] = {0xc0, 0x00};
 
 void aip1638_usr_buf_write(uint8_t offset, uint8_t seg_font)
 {
@@ -130,7 +130,7 @@ void aip1638_update(spi_device_handle_t spi, uint8_t *data_buf)
     uint8_t disp_cmd = 0x8F;
 
     spi_aip1638_write(spi, &data_cmd, 1);
-    spi_aip1638_write(spi, data_buf, 16);
+    spi_aip1638_write(spi, data_buf, 17);
     spi_aip1638_write(spi, &disp_cmd, 1);
 }
 
