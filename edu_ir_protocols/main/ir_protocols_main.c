@@ -67,26 +67,54 @@ static void example_ir_rx_task(void *arg)
             cnt += 1;
 
             if (ir_parser->input(ir_parser, items, length) == ESP_OK) {
-            	memset(data0,0,sizeof(data0));
-            	memset(data1,0,sizeof(data1));
+                memset(data0,0,sizeof(data0));
+                memset(data1,0,sizeof(data1));
                 if (ir_parser->get_scan_code_ext(ir_parser, &data0, &data1, &data0_len, &data1_len, (uint8_t)length) == ESP_OK) {
-                	printf("--------------------------------------------------------------------------------\n");
-                	for(int i=0; i < 8; i ++) {
-                		for (int j = 0; j < 8; j ++) {
-                			printf("%d-", data0[i] & 1<<(j)?1:0);
-                		}
-                	}
-                	printf("\n--------------------------------------------------------------------------------\n");
-                	for(int i=0; i < 8; i ++) {
-                		for (int j = 0; j < 8; j ++) {
-                			printf("%d-", data1[i] & 1<<(j)?1:0);
-                		}
-                	}
-                	printf("\n--------------------------------------------------------------------------------\n");
+                    printf("len=%d,%d\n", data0_len, data1_len);
+                    int i,j,bit_cnt;
+                    // print rx data as hex
+                    for(i=0; i < data0_len/8; i ++) {
+                        printf("%x-", data0[i]);
+                    }
+                    for(i=0; i < data1_len/8; i ++) {
+                        printf("%x-", data1[i]);
+                    }
+                    printf("\n");
+
+                    // print rx data as bit
+                    for(i=0; i < (data0_len + data1_len); i ++) {
+                        printf("%d-", i%10);
+                    }
+                    printf("\n");
+                    bit_cnt = 0;
+                    for(i=0; i < 8; i ++) {
+                        for (j = 0; j < 8; j ++) {
+                            bit_cnt += 1;
+                            if(bit_cnt > data0_len)
+                                break;
+                            printf("%d-", data0[i] & 1<<(j)?1:0);
+                        }
+                        if(bit_cnt > data0_len)
+                            break;
+                    }
+                    bit_cnt = 0;
+                    for(i=0; i < 8; i ++) {
+                        for (j = 0; j < 8; j ++) {
+                            bit_cnt += 1;
+                            if(bit_cnt > data1_len)
+                                break;
+                            printf("%d-", data1[i] & 1<<(j)?1:0);
+                        }
+                        if(bit_cnt > data1_len)
+                            break;
+                    }
+                    printf("\n");
                 }
+            }else {
+                printf("ir_parser->input failed.\n");
             }
 
-			vRingbufferReturnItem(rb, (void *) items);
+            vRingbufferReturnItem(rb, (void *) items);
         }
     }
     ir_parser->del(ir_parser);
