@@ -62,16 +62,31 @@ static inline bool nec_check_in_range(uint32_t raw_ticks, uint32_t target_ticks,
     return (raw_ticks < (target_ticks + margin_ticks)) && (raw_ticks > (target_ticks - margin_ticks));
 }
 
+static void nec_log(nec_parser_t *parser)
+{
+    nec_parser_t *nec_parser = __containerof(parser, nec_parser_t, parent);
+    rmt_item32_t item = nec_parser->buffer[nec_parser->cursor];
+#if 1
+    ESP_LOGI(TAG, "nec_log [%d] d0 = %d, d1 = %d, l0 %d, l1 %d, %d\n", 
+            nec_parser->cursor,
+            item.duration0,
+            item.duration1,
+            item.level0,
+            item.level1,
+            nec_parser->margin_ticks);
+#endif
+}
+
 static bool nec_parse_head(nec_parser_t *nec_parser)
 {
-    nec_parser->cursor = 0;
+    // nec_parser->cursor = 0;
     rmt_item32_t item = nec_parser->buffer[nec_parser->cursor];
     bool ret = (item.level0 == nec_parser->inverse) && (item.level1 != nec_parser->inverse) &&
-               nec_check_in_range(item.duration0, nec_parser->leading_code_high_ticks, nec_parser->margin_ticks) &&
+               nec_check_in_range(item.duration0, nec_parser->leading_code_high_ticks, nec_parser->margin_ticks + 120) &&
                nec_check_in_range(item.duration1, nec_parser->leading_code_low_ticks, nec_parser->margin_ticks);
-
-    if(ret)
-    	nec_parser->cursor += 1;
+    if(!ret)
+        nec_log(nec_parser);
+    nec_parser->cursor += 1;
     return ret;
 }
 
@@ -101,21 +116,11 @@ static bool nec_parse_connect(ir_parser_t *parser)
     bool ret = (item.level0 == nec_parser->inverse) && (item.level1 != nec_parser->inverse) &&
                nec_check_in_range(item.duration0, nec_parser->connect_code_high_ticks, nec_parser->margin_ticks) &&
                nec_check_in_range(item.duration1, nec_parser->connect_code_low_ticks, nec_parser->margin_ticks);
-#if 0
-	ESP_LOGI(TAG, "connect [%d] d0 = %d, d1 = %d, l0 %d, l1 %d ret = %d\n %d %d, %d", \
-			nec_parser->cursor,
-			item.duration0,
-			item.duration1,
-			item.level0,
-			item.level1,
-			ret,
-			nec_parser->connect_code_high_ticks,
-			nec_parser->connect_code_low_ticks,
-			nec_parser->margin_ticks);
-#endif
 
     if (ret) {
     	nec_parser->cursor += 1;
+    }else {
+        nec_log(nec_parser);
     }
     return ret;
 }
@@ -143,7 +148,7 @@ static esp_err_t nec_parse_logic(ir_parser_t *parser, bool *logic)
 
 static bool nec_parse_repeat_frame(nec_parser_t *nec_parser)
 {
-    nec_parser->cursor = 0;
+    // nec_parser->cursor = 0;
     rmt_item32_t item = nec_parser->buffer[nec_parser->cursor];
     bool ret = (item.level0 == nec_parser->inverse) && (item.level1 != nec_parser->inverse) &&
                nec_check_in_range(item.duration0, nec_parser->repeat_code_high_ticks, nec_parser->margin_ticks) &&
@@ -179,6 +184,8 @@ static esp_err_t nec_parser_get_scan_code(ir_parser_t *parser, uint32_t *address
     bool logic_value = false;
     nec_parser_t *nec_parser = __containerof(parser, nec_parser_t, parent);
     NEC_CHECK(address && command && repeat, "address, command and repeat can't be null", out, ESP_ERR_INVALID_ARG);
+
+    nec_parser->cursor = 0;
     if (nec_parser->repeat) {
         if (nec_parse_repeat_frame(nec_parser)) {
             *address = nec_parser->last_address;
@@ -223,37 +230,56 @@ static esp_err_t nec_parser_get_scan_code_ext(ir_parser_t *parser, uint8_t *data
 
     *data0_len = 0;
     *data1_len = 0;
+    nec_parser->cursor = 0;
+    if (nec_parser->repeat) {
+        if (nec_parse_repeat_frame(nec_parser)) {
+            ESP_LOGI(TAG, "IR rx repeat data");
+            ret = ESP_OK;
+        }
+    } else {
+        while(!nec_parse_head(nec_parser)) {
+            i += 1;
+            
+            if(i >= item_num){
+                ret = ESP_FAIL;
+                ESP_LOGI(TAG, "IR nec_parse_head miss");
+                break;
+            }
+        }
 
-	if (nec_parse_head(nec_parser)) {
-		for (i = 0; i < item_num; i++) {
-			if (nec_parse_logic(parser, &logic_value) == ESP_OK) {
-				data0[i/8] |= (logic_value << (i%8));
-				*data0_len += 1;
-			}else {
-//				ESP_LOGI(TAG, "IR parser a connect at %d data0_len = %d", i, *data0_len);
-				break;
-			}
-		}
-		if(nec_parse_connect(parser)) {
-			i += 1;
-		}
+        if (i < item_num) {
+            ESP_LOGI(TAG, "IR nec_parse_head done");
+            for (i = 0; i < item_num; i++) {
+                if (nec_parse_logic(parser, &logic_value) == ESP_OK) {
+                    data0[i/8] |= (logic_value << (i%8));
+                    *data0_len += 1;
+                }else {
+                    // ESP_LOGI(TAG, "IR parser a connect at %d data0_len = %d", i, *data0_len);
+                    break;
+                }
+            }
+            if(nec_parse_connect(parser)) {
+                i += 1;
+            }
 
-		i_tmp = i;
-		for (i = 0; (i+i_tmp) < item_num; i++) {
-			if (nec_parse_logic(parser, &logic_value) == ESP_OK) {
-				data1[i/8] |= (logic_value << (i%8));
-				*data1_len += 1;
-			}else {
-				ESP_LOGI(TAG, "IR parser err at %d:%d:%d skip", i, i+i_tmp, item_num);
+            i_tmp = i;
+            for (i = 0; (i+i_tmp) < item_num; i++) {
+                if (nec_parse_logic(parser, &logic_value) == ESP_OK) {
+                    data1[i/8] |= (logic_value << (i%8));
+                    *data1_len += 1;
+                }else if (nec_parse_repeat_frame(nec_parser)) {
+                    ESP_LOGI(TAG, "IR rx repeat data");
+                }else{
+                    ESP_LOGI(TAG, "IR parser err at %d:%d:%d skip", i, i+i_tmp, item_num);
 
-				nec_parser_t *nec_parser_tmp = __containerof(parser, nec_parser_t, parent);
-				nec_parser_tmp->cursor += 1;
-//				break;
-			}
-		}
+                    nec_parser_t *nec_parser_tmp = __containerof(parser, nec_parser_t, parent);
+                    nec_parser_tmp->cursor += 1;
+                }
+            }
 
-		ret = ESP_OK;
-	}
+            ret = ESP_OK;
+        }
+    }
 
     return ret;
 }
