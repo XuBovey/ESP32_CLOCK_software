@@ -30,7 +30,37 @@
 #include "esp_log.h"
 #include "mqtt_client.h"
 
+#include "cJSON.h"
+#include "unity.h"
+#include "stdio.h"
+
 static const char *TAG = "MQTT_EXAMPLE";
+
+int get_temperature(void)
+{
+    static int temperature = 0;
+    temperature += 1;
+    if(temperature > 100)
+        temperature = 0;
+    return temperature;
+}
+
+void temperature_to_json(int temperature, char* json_data, int *len)
+{
+    cJSON * root = cJSON_CreateObject();
+
+    cJSON_AddNumberToObject(root,"temperature", temperature);
+
+    char *rendered = cJSON_Print(root);
+    if(strlen(rendered) > *len){
+        *len = 0;
+    }else{
+        *len = strlen(rendered);
+        strcpy(json_data, rendered);
+    }
+
+    cJSON_Delete(root);
+}
 
 
 static void log_error_if_nonzero(const char * message, int error_code)
@@ -79,7 +109,12 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
             ESP_LOGI(TAG, "MQTT_EVENT_DATA");
             printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
             printf("DATA=%.*s\r\n", event->data_len, event->data);
-            
+
+            char json_data[100];
+            int data_len = 100;
+            temperature_to_json(get_temperature(), json_data, &data_len);
+            if(data_len)
+                esp_mqtt_client_publish(client, "/topic_neuai/temperature", json_data, 0, 0, 0);
             break;
         case MQTT_EVENT_ERROR:
             ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
